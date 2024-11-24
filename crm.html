@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ТеплоГаз CRM</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/seatable-api@latest/dist/index.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <span class="material-icons">local_fire_department</span>
+            <h1>ТеплоГаз CRM</h1>
+        </div>
+        <nav>
+            <a href="#" class="active" data-page="dashboard">
+                <span class="material-icons">dashboard</span>
+                Дашборд
+            </a>
+            <a href="#" data-page="todos">
+                <span class="material-icons">check_circle</span>
+                Задачи
+            </a>
+            <a href="#" data-page="notes">
+                <span class="material-icons">note</span>
+                Заметки
+            </a>
+        </nav>
+    </div>
+
+    <main>
+        <header>
+            <div class="datetime">
+                <div id="time">00:00:00</div>
+                <div id="date">01.01.2024</div>
+                <div id="weekday">Понедельник</div>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Dashboard Page -->
+            <div class="page" id="dashboard">
+                <div class="widget activity-prediction">
+                    <h2>Прогноз активности</h2>
+                    <div class="activity-chart">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+                <div class="widget quick-todo">
+                    <h2>Быстрые задачи</h2>
+                    <div id="quickTodoList"></div>
+                </div>
+                <div class="widget quick-notes">
+                    <h2>Последние заметки</h2>
+                    <div id="quickNotesList"></div>
+                </div>
+            </div>
+
+            <!-- Todo Page -->
+            <div class="page" id="todos" style="display: none;">
+                <div class="todo-container">
+                    <div class="todo-header">
+                        <h2>Задачи</h2>
+                        <button id="addTodo">
+                            <span class="material-icons">add</span>
+                            Новая задача
+                        </button>
+                    </div>
+                    <div class="todo-filters">
+                        <button data-filter="all" class="active">Все</button>
+                        <button data-filter="active">Активные</button>
+                        <button data-filter="completed">Завершенные</button>
+                    </div>
+                    <div id="todoList"></div>
+                </div>
+            </div>
+
+            <!-- Notes Page -->
+            <div class="page" id="notes" style="display: none;">
+                <div class="notes-container">
+                    <div class="notes-header">
+                        <h2>Заметки</h2>
+                        <button id="addNote">
+                            <span class="material-icons">add</span>
+                            Новая заметка
+                        </button>
+                    </div>
+                    <div id="notesList" class="notes-grid"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальные окна -->
+    <div id="todoModal" class="modal">
+        <div class="modal-content">
+            <h2>Новая задача</h2>
+            <form id="todoForm">
+                <input type="text" id="todoDescription" placeholder="Описание задачи" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="todoPriority">Приоритет:</label>
+                        <select id="todoPriority" required>
+                            <option value="low">Низкий</option>
+                            <option value="medium" selected>Средний</option>
+                            <option value="high">Высокий</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="todoDueDate">Срок:</label>
+                        <input type="date" id="todoDueDate" required>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel">Отмена</button>
+                    <button type="submit">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="noteModal" class="modal">
+        <div class="modal-content">
+            <h2>Новая заметка</h2>
+            <form id="noteForm">
+                <textarea id="noteContent" placeholder="Текст заметки" required></textarea>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel">Отмена</button>
+                    <button type="submit">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
