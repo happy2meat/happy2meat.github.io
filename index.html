@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ТеплоГаз CRM</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/seatable-api@latest/dist/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <span class="material-icons">local_fire_department</span>
+            <h1>ТеплоГаз CRM</h1>
+        </div>
+        <nav>
+            <a href="#" class="active" data-page="dashboard">
+                <span class="material-icons">dashboard</span>
+                Дашборд
+            </a>
+            <a href="#" data-page="todos">
+                <span class="material-icons">check_circle</span>
+                Задачи
+            </a>
+            <a href="#" data-page="notes">
+                <span class="material-icons">note</span>
+                Заметки
+            </a>
+        </nav>
+        <div class="settings-section">
+            <div class="form-group">
+                <label for="apiKey">SeaTable API Key</label>
+                <input type="password" id="apiKey" placeholder="Введите ключ API">
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <header>
+            <div class="datetime">
+                <div class="current-activity">
+                    <div class="activity-indicator">
+                        <div class="activity-bar">
+                            <div class="activity-fill"></div>
+                        </div>
+                        <div class="activity-label">
+                            <span class="activity-percentage">0%</span>
+                            <span class="activity-text">загруженность</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="time">00:00:00</div>
+                <div id="date">01.01.2024</div>
+                <div id="weekday">Понедельник</div>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Dashboard Page -->
+            <div class="page" id="dashboard">
+                <div class="widget activity-prediction">
+                    <h2>Прогноз активности</h2>
+                    <div class="activity-chart">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+                <div class="widget quick-todo">
+                    <h2>Быстрые задачи</h2>
+                    <div id="quickTodoList"></div>
+                </div>
+                <div class="widget quick-notes">
+                    <h2>Последние заметки</h2>
+                    <div id="quickNotesList"></div>
+                </div>
+            </div>
+
+            <!-- Todo Page -->
+            <div class="page" id="todos" style="display: none;">
+                <div class="todo-container">
+                    <div class="todo-header">
+                        <h2>Задачи</h2>
+                    </div>
+                    <div class="todo-filters">
+                        <button class="filter-btn active" data-filter="all">Все</button>
+                        <button class="filter-btn" data-filter="active">Активные</button>
+                        <button class="filter-btn" data-filter="completed">Завершенные</button>
+                    </div>
+                    <div id="todoList"></div>
+                    <button id="addTodo" class="add-button" aria-label="Добавить задачу">
+                        <span class="material-icons">add</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notes Page -->
+            <div class="page" id="notes" style="display: none;">
+                <div class="notes-container">
+                    <div class="notes-header">
+                        <h2>Заметки</h2>
+                    </div>
+                    <div id="notesList" class="notes-grid"></div>
+                    <button id="addNote" class="add-button" aria-label="Добавить заметку">
+                        <span class="material-icons">add</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальные окна -->
+    <div id="todoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Новая задача</h2>
+            </div>
+            <form id="todoForm">
+                <div class="form-group">
+                    <label for="todoDescription">Описание</label>
+                    <textarea id="todoDescription" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="todoDueDate">Срок</label>
+                    <input type="date" id="todoDueDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="todoPriority">Приоритет</label>
+                    <select id="todoPriority" required>
+                        <option value="low">Низкий</option>
+                        <option value="medium">Средний</option>
+                        <option value="high">Высокий</option>
+                    </select>
+                </div>
+                <button type="submit">Добавить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="noteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Новая заметка</h2>
+            </div>
+            <form id="noteForm">
+                <div class="form-group">
+                    <textarea id="noteContent" placeholder="Введите текст заметки..." required></textarea>
+                </div>
+                <button type="submit">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
