@@ -35,12 +35,13 @@ async function initSeaTable() {
     }
 
     try {
-        seatable = new window.SeaTable({
+        // Initialize SeaTable client
+        seatable = new SeaTableAPI();
+        await seatable.init({
             server: 'https://cloud.seatable.io',
             APIToken: apiKey
         });
         
-        await seatable.auth();
         state.connected = true;
         
         // Start connection check if not already running
@@ -65,7 +66,7 @@ async function checkConnection() {
     }
 
     try {
-        await seatable.auth();
+        await seatable.ping();
         state.connected = true;
     } catch (error) {
         console.error('Lost connection to SeaTable:', error);
