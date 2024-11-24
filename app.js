@@ -9,81 +9,71 @@ const SEATABLE_CONFIG = {
 };
 
 // State management
-let state = {
-    todos: [],
-    notes: [],
-    activity: loadActivityData(),
-    connected: false
-};
-
-// SeaTable Integration
 let seatable = null;
 let connectionCheckInterval = null;
+const state = {
+    connected: false,
+    todos: [],
+    notes: [],
+    activity: loadActivityData()
+};
 
+// SeaTable connection functions
 function getStoredApiKey() {
-    return localStorage.getItem('seatable_api_key');
+    return localStorage.getItem('seatableApiKey');
 }
 
 function saveApiKey(key) {
-    localStorage.setItem('seatable_api_key', key);
+    localStorage.setItem('seatableApiKey', key);
 }
 
 async function initSeaTable() {
     const apiKey = getStoredApiKey();
     if (!apiKey) {
-        console.log('No API key found. Using local storage only.');
-        loadFromLocalStorage();
+        console.log('No API key found');
         return;
     }
 
     try {
-        seatable = new SeaTable();
-        await seatable.init({
-            server: SEATABLE_CONFIG.server,
-            token: apiKey
+        seatable = new window.SeaTable({
+            server: 'https://cloud.seatable.io',
+            APIToken: apiKey
         });
         
-        // Select the base
-        const bases = await seatable.listBases();
-        const base = bases.find(b => b.workspace_id === SEATABLE_CONFIG.workspaceID);
-        if (!base) {
-            throw new Error('Base not found');
-        }
-        await seatable.selectBase(base.id);
-        
+        await seatable.auth();
         state.connected = true;
-        console.log('Successfully connected to SeaTable');
         
-        // Start periodic connection check
+        // Start connection check if not already running
         if (!connectionCheckInterval) {
-            connectionCheckInterval = setInterval(checkConnection, 60000); // Check every minute
+            connectionCheckInterval = setInterval(checkConnection, 60000);
         }
         
         // Load initial data
         await loadFromSeaTable();
+        
     } catch (error) {
         console.error('Failed to connect to SeaTable:', error);
         state.connected = false;
-        loadFromLocalStorage();
+        seatable = null;
     }
 }
 
 async function checkConnection() {
-    if (!seatable) return;
-    
+    if (!seatable) {
+        state.connected = false;
+        return;
+    }
+
     try {
-        await seatable.ping();
-        if (!state.connected) {
-            state.connected = true;
-            console.log('Reconnected to SeaTable');
-            await loadFromSeaTable();
-        }
+        await seatable.auth();
+        state.connected = true;
     } catch (error) {
-        if (state.connected) {
-            state.connected = false;
-            console.log('Lost connection to SeaTable, falling back to local storage');
-            loadFromLocalStorage();
-        }
+        console.error('Lost connection to SeaTable:', error);
+        state.connected = false;
+        seatable = null;
+        
+        // Try to reconnect
+        await initSeaTable();
     }
 }
 
