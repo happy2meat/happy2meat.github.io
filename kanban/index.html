@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+<!-- saved from url=(0036)https://happy2meat.github.io/kanban/ -->
 <html>
 <head>
-    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liquid Glass Kanban Board</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="./Liquid Glass Kanban Board_files/css2" rel="stylesheet">
     <style>
         /* Цветовая палитра и переменные CSS */
         :root {
@@ -993,7 +994,7 @@
             </div>
             <div class="setting-group">
                 <label>Управление Тегами:</label>
-                <input type="text" id="custom-tag-input" placeholder="Добавить новый тег (например, 'звук')">
+                <input type="text" id="custom-tag-input" placeholder="Добавить новый тег (например, &#39;звук&#39;)">
                 <button id="add-custom-tag-button" style="margin-top: 10px;">➕ Добавить Тег</button>
                 <div id="existing-tags-list" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px;">
                     <!-- Существующие теги будут загружены сюда -->
@@ -1044,11 +1045,30 @@
         import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase variables
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        let firebaseConfig = {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+            try {
+                firebaseConfig = JSON.parse(__firebase_config);
+            } catch (e) {
+                console.error("Error parsing __firebase_config:", e);
+                // Fallback if parsing fails, use appId as projectId
+                firebaseConfig = { projectId: appId };
+            }
+        } else {
+            // Default config if __firebase_config is not provided, use appId as projectId
+            firebaseConfig = { projectId: appId };
+        }
+
+        // Ensure projectId is present, using appId as a fallback
+        if (!firebaseConfig.projectId) {
+            firebaseConfig.projectId = appId;
+        }
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         let userId = null;
         let isAuthReady = false;
