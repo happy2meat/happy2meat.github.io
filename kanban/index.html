@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquid Glass Kanban Board</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Цветовая палитра и переменные CSS */
+        :root {
+            --color-primary-dark: #0F1A2C;
+            --color-primary-purple-start: #2A0F45;
+            --color-primary-purple-end: #6A1B9A;
+            --color-accent-light-blue: #81D4FA;
+            --color-accent-silver: #C0C0C0;
+            --color-overlay-dark: rgba(0, 0, 0, 0.6);
+            --glass-background-light: rgba(255, 255, 255, 0.1);
+            --glass-background-dark: rgba(0, 0, 0, 0.2);
+            --glass-border-light: rgba(192, 192, 192, 0.3);
+            --text-color-light: #E0E0E0;
+            --text-color-dark: #333;
+            --font-family: 'Inter', sans-serif;
+            --main-background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-purple-start) 50%, var(--color-primary-purple-end) 100%);
+        }
+
+        /* Общие стили */
+        body {
+            margin: 0;
+            font-family: var(--font-family);
+            background: var(--main-background);
+            color: var(--text-color-light);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Стили для контейнера приложения */
+        #app {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Стили для эффекта жидкого стекла */
+        .glass-effect {
+            background-color: var(--glass-background-light);
+            border: 1px solid var(--glass-border-light);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-effect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.05) 0%,
+                rgba(255, 255, 255, 0.01) 50%,
+                rgba(255, 255, 255, 0.05) 100%
+            );
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .glass-effect:hover::before {
+            opacity: 1;
+        }
+
+        /* Анимация блика на стекле при наведении */
+        .glass-effect::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+            transform: rotate(45deg);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .glass-effect:hover::after {
+            opacity: 0.5;
+        }
+
+        /* Общие стили для кнопок */
+        button {
+            background: linear-gradient(45deg, var(--color-accent-light-blue), var(--color-accent-silver));
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: var(--color-primary-dark);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(129, 212, 250, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 1em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(129, 212, 250, 0.5);
+            background: linear-gradient(45deg, var(--color-accent-silver), var(--color-accent-light-blue));
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(129, 212, 250, 0.2);
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, transparent 100%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
+        }
+
+        button:active::before {
+            width: 200%;
+            height: 200%;
+            opacity: 1;
+            transition: 0s;
+        }
+
+        /* Стиль для иконок-кнопок */
+        .icon-button {
+            background: none;
+            border: none;
+            font-size: 1.8em;
+            cursor: pointer;
+            color: var(--color-accent-light-blue);
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .icon-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+        .icon-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Header */
+        header {
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 2.2em;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--color-accent-light-blue), var(--color-accent-silver));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        /* Контейнер для смены экранов */
+        .screen-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: none;
+            opacity: 0;
+            transform: rotateY(90deg) scale(0.8);
+            transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
+            padding: 20px;
+            box-sizing: border-box;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            opacity: 1;
+            transform: rotateY(0deg) scale(1);
+        }
+
+        /* Фон для локаций */
+        .screen[data-location="Лаборатория"] { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><defs><radialGradient id="gradLab" cx="50%" cy="50%" r="50%" fx="50%" fy="50%"><stop offset="0%" stop-color="%232A0F45"/><stop offset="100%" stop-color="%230F1A2C"/></radialGradient></defs><rect width="100" height="100" fill="url(%23gradLab)"/><circle cx="20" cy="20" r="15" fill="rgba(129, 212, 250, 0.1)"/><circle cx="80" cy="30" r="10" fill="rgba(192, 192, 192, 0.1)"/><path d="M10 50 Q50 10 90 50 T10 50" stroke="rgba(129, 212, 250, 0.2)" stroke-width="0.8" fill="none"/></svg>'); }
+        .screen[data-location="Студия"] { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><defs><radialGradient id="gradStudio" cx="50%" cy="50%" r="50%" fx="50%" fy="50%"><stop offset="0%" stop-color="%236A1B9A"/><stop offset="100%" stop-color="%232A0F45"/></radialGradient></defs><rect width="100" height="100" fill="url(%23gradStudio)"/><circle cx="30" cy="70" r="12" fill="rgba(192, 192, 192, 0.1)"/><path d="M5 85 Q20 70 35 85 S50 100 65 85 T80 70 S95 85 95 85" fill="rgba(192, 192, 192, 0.05)"/><path d="M50 10 L60 30 L40 30 Z" fill="rgba(129, 212, 250, 0.1)"/></svg>'); }
+        .screen[data-location="Арена"] { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><defs><radialGradient id="gradArena" cx="50%" cy="50%" r="50%" fx="50%" fy="50%"><stop offset="0%" stop-color="%230F1A2C"/><stop offset="100%" stop-color="%232A0F45"/></radialGradient></defs><rect width="100" height="100" fill="url(%23gradArena)"/><rect x="10" y="10" width="80" height="80" fill="rgba(129, 212, 250, 0.1)" transform="rotate(15 50 50)"/><circle cx="50" cy="50" r="25" stroke="rgba(192, 192, 192, 0.2)" stroke-width="1.5" fill="none"/><line x1="30" y1="30" x2="70" y2="70" stroke="rgba(192, 192, 192, 0.1)" stroke-width="0.8"/><line x1="70" y1="30" x2="30" y2="70" stroke="rgba(192, 192, 192, 0.1)" stroke-width="0.8"/></svg>'); }
+
+
+        /* Главное меню */
+        #main-menu {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 20px;
+            padding-top: 50px;
+        }
+
+        #main-menu h2 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, var(--color-accent-light-blue), var(--color-accent-silver));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(129, 212, 250, 0.5);
+        }
+
+        #project-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            width: 90%;
+            max-width: 1200px;
+            padding: 20px;
+            box-sizing: border-box;
+            justify-content: center;
+            align-items: flex-start;
+            flex-grow: 1;
+            overflow-y: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        #project-list::-webkit-scrollbar { display: none; }
+
+        .project-card {
+            padding: 25px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-start;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            min-height: 180px;
+            max-height: 220px;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(129, 212, 250, 0.4);
+        }
+
+        .project-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.6em;
+            font-weight: 600;
+            color: var(--color-accent-light-blue);
+            text-shadow: 0 0 5px rgba(129, 212, 250, 0.3);
+        }
+
+        .project-card p {
+            font-size: 0.95em;
+            color: var(--text-color-light);
+            opacity: 0.8;
+            flex-grow: 1;
+        }
+        .project-card .project-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            align-self: flex-end;
+        }
+        .project-card .project-actions button {
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+
+        /* Канбан доска */
+        #kanban-board {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .board-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+            margin-bottom: 10px;
+        }
+
+        .board-title-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .board-title {
+            font-size: 2em;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--color-accent-light-blue), var(--color-accent-silver));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .board-location-display {
+            font-size: 1.1em;
+            color: var(--color-accent-silver);
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .board-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        #kanban-columns {
+            display: flex;
+            flex-grow: 1;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            padding-left: 20px;
+            padding-right: 20px;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        #kanban-columns::-webkit-scrollbar { display: none; }
+
+        .kanban-column {
+            min-width: 300px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 15px;
+            box-sizing: border-box;
+            background-color: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(192, 192, 192, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .column-header {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--color-accent-light-blue);
+            text-align: center;
+        }
+
+        .task-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 5px;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .task-list::-webkit-scrollbar { display: none; }
+
+        .kanban-card {
+            padding: 18px;
+            cursor: grab;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+            min-height: 80px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .kanban-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(129, 212, 250, 0.3);
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .kanban-card.dragging {
+            opacity: 0.7;
+            transform: scale(1.05) rotate(2deg);
+            box-shadow: 0 10px 40px rgba(129, 212, 250, 0.6);
+        }
+
+        .kanban-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--color-accent-light-blue);
+        }
+
+        .kanban-card p {
+            font-size: 0.9em;
+            color: var(--text-color-light);
+            opacity: 0.9;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background-color: rgba(129, 212, 250, 0.2);
+            color: var(--text-color-light);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+        .tag.tag-баг { background-color: rgba(255, 99, 71, 0.3); }
+        .tag.tag-дизайн { background-color: rgba(135, 206, 250, 0.3); }
+        .tag.tag-программирование { background-color: rgba(144, 238, 144, 0.3); }
+        .tag.tag-срочно { background-color: rgba(255, 215, 0, 0.3); }
+
+
+        .card-due-date {
+            font-size: 0.85em;
+            color: var(--color-accent-silver);
+            margin-top: 10px;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .card-due-date.overdue {
+            color: #FF6347;
+            font-weight: bold;
+        }
+        .kanban-card.filtered-out {
+            display: none;
+        }
+
+        /* Модальные окна */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--color-overlay-dark);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            padding: 30px;
+            min-width: 400px;
+            max-width: 600px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transform: translateY(-20px) scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.visible .modal-content {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-content h3 {
+            margin: 0;
+            font-size: 1.8em;
+            color: var(--color-accent-light-blue);
+            text-shadow: 0 0 8px rgba(129, 212, 250, 0.3);
+        }
+
+        .modal-content label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color-light);
+            opacity: 0.9;
+        }
+
+        .modal-content input[type="text"],
+        .modal-content textarea,
+        .modal-content input[type="date"],
+        .modal-content select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--glass-border-light);
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            color: var(--text-color-light);
+            font-family: var(--font-family);
+            font-size: 1em;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+        }
+
+        .modal-content input[type="text"]:focus,
+        .modal-content textarea:focus,
+        .modal-content input[type="date"]:focus,
+        .modal-content select:focus {
+            border-color: var(--color-accent-light-blue);
+            background-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 2px rgba(129, 212, 250, 0.3);
+        }
+
+        .modal-content textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        /* Стиль для кнопки "Готово" в деталях задачи */
+        #task-done-button {
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        #task-done-button:hover {
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+        }
+        /* Анимация вспышки */
+        @keyframes flash {
+            0% { background: linear-gradient(45deg, #4CAF50, #8BC34A); box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3); }
+            50% { background: linear-gradient(45deg, #81D4FA, #C0C0C0); box-shadow: 0 0 30px 10px rgba(129, 212, 250, 0.8); }
+            100% { background: linear-gradient(45deg, #4CAF50, #8BC34A); box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3); }
+        }
+        .flash-animation {
+            animation: flash 0.8s ease-in-out;
+        }
+
+        /* Панель настроек */
+        #settings-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100%;
+            width: 350px;
+            max-width: 90%;
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            padding: 30px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 999;
+        }
+
+        #settings-panel.visible {
+            transform: translateX(0);
+        }
+
+        #settings-panel h3 {
+            margin: 0;
+            font-size: 1.8em;
+            color: var(--color-accent-light-blue);
+            text-shadow: 0 0 8px rgba(129, 212, 250, 0.3);
+        }
+
+        #settings-panel .setting-group {
+            margin-bottom: 20px;
+        }
+
+        #settings-panel .setting-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 1.1em;
+            color: var(--text-color-light);
+        }
+
+        #settings-panel .setting-group input[type="file"] {
+            display: none;
+        }
+
+        #settings-panel .setting-group .file-upload-label {
+            display: inline-block;
+            background: var(--glass-background-light);
+            border: 1px dashed var(--glass-border-light);
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #settings-panel .setting-group .file-upload-label:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Переключатель темы (вместо чекбокса) */
+        .theme-switch {
+            width: 60px;
+            height: 30px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .theme-switch::before {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background-color: var(--text-color-light);
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .theme-switch.dark-theme::before {
+            transform: translateX(30px);
+        }
+        .theme-switch.dark-theme {
+            background-color: rgba(129, 212, 250, 0.5);
+        }
+
+
+        /* Сообщения */
+        .message-box {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: var(--text-color-light);
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .message-box.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-10px);
+        }
+
+        /* Canvas для конфетти */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Стили для фильтрации */
+        #filter-modal-content .filter-group {
+            margin-bottom: 15px;
+        }
+        #filter-modal-content .filter-group h4 {
+            margin: 0 0 10px 0;
+            color: var(--color-accent-light-blue);
+            font-size: 1.2em;
+        }
+        #filter-modal-content .filter-group .tag-options,
+        #filter-modal-content .filter-group .due-date-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        #filter-modal-content .filter-group .tag-option,
+        #filter-modal-content .filter-group .due-date-option {
+            background-color: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--glass-border-light);
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-color-light);
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        #filter-modal-content .filter-group .tag-option.selected,
+        #filter-modal-content .filter-group .due-date-option.selected {
+            background: linear-gradient(45deg, var(--color-accent-light-blue), var(--color-accent-silver));
+            color: var(--color-primary-dark);
+            box-shadow: 0 2px 10px rgba(129, 212, 250, 0.4);
+        }
+        #filter-modal-content .filter-group .tag-option:hover,
+        #filter-modal-content .filter-group .due-date-option:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Custom confirmation modal */
+        #custom-confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        #custom-confirm-modal.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        #custom-confirm-modal .modal-content {
+            text-align: center;
+            min-width: 300px;
+            max-width: 450px;
+        }
+        #custom-confirm-modal .modal-actions {
+            justify-content: center;
+        }
+
+
+        /* Медиа-запросы для адаптивности */
+        @media (max-width: 768px) {
+            header {
+                padding: 10px 20px;
+            }
+            .header-title {
+                font-size: 1.8em;
+            }
+            .header-actions {
+                gap: 10px;
+            }
+            button {
+                padding: 10px 18px;
+                font-size: 0.9em;
+            }
+            .icon-button {
+                font-size: 1.5em;
+            }
+            #main-menu h2 {
+                font-size: 2em;
+            }
+            #project-list {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                padding: 15px;
+            }
+            .project-card {
+                padding: 20px;
+                min-height: 160px;
+            }
+            .kanban-column {
+                min-width: 280px;
+                padding: 15px;
+            }
+            .kanban-card {
+                padding: 15px;
+            }
+            .modal-content {
+                min-width: unset;
+                width: 90%;
+                padding: 20px;
+            }
+            #settings-panel {
+                width: 100%;
+                max-width: 100%;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                font-size: 1.5em;
+            }
+            .board-title {
+                font-size: 1.6em;
+            }
+            #main-menu h2 {
+                font-size: 1.8em;
+            }
+            .project-card h3 {
+                font-size: 1.4em;
+            }
+            .kanban-column {
+                min-width: 260px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1 class="header-title" id="app-header-title">Канбан</h1>
+            <div class="header-actions">
+                <button id="add-project-button" class="action-button">✨ Новый Проект</button>
+                <button id="back-to-main-menu" class="action-button" style="display: none;">🏠 Главное Меню</button>
+                <button id="settings-button" class="icon-button">⚙️</button>
+            </div>
+        </header>
+
+        <div class="screen-container">
+            <!-- Главное меню (Список проектов) -->
+            <section id="main-menu" class="screen active">
+                <h2>Ваши Проекты</h2>
+                <div id="project-list">
+                    <!-- Проекты будут загружены сюда JS -->
+                </div>
+            </section>
+
+            <!-- Канбан доска -->
+            <section id="kanban-board" class="screen">
+                <div class="board-header">
+                    <div class="board-title-container">
+                        <h2 class="board-title" id="current-board-title"></h2>
+                        <span class="board-location-display" id="current-board-location"></span>
+                    </div>
+                    <div class="board-controls">
+                        <button id="add-task-button">➕ Задача</button>
+                        <button id="filter-tasks-button">🔍 Фильтр</button>
+                        <button id="archive-board-button">🗄️ Архив</button>
+                    </div>
+                </div>
+                <div id="kanban-columns">
+                    <!-- Колонки будут загружены сюда JS -->
+                </div>
+            </section>
+            <!-- Экран архива проекта -->
+            <section id="archive-screen" class="screen">
+                <div class="board-header">
+                    <h2 class="board-title">Архив Проекта "<span id="archive-project-name"></span>"</h2>
+                    <div class="board-controls">
+                        <button id="back-to-board-from-archive">🏠 К Доске</button>
+                    </div>
+                </div>
+                <div id="archive-task-list" class="task-list kanban-column glass-effect" style="width: 100%; overflow-y: auto;">
+                    <!-- Задачи из архива будут загружены сюда -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Модальное окно деталей/редактирования задачи -->
+        <div id="task-modal-overlay" class="modal-overlay">
+            <div id="task-modal-content" class="modal-content glass-effect">
+                <h3 id="task-modal-title">Детали Задачи</h3>
+                <label for="task-title-input">Заголовок:</label>
+                <input type="text" id="task-title-input" placeholder="Введите заголовок задачи">
+
+                <label for="task-description-input">Описание:</label>
+                <textarea id="task-description-input" placeholder="Подробное описание задачи"></textarea>
+
+                <label for="task-tags-input">Теги (через запятую):</label>
+                <input type="text" id="task-tags-input" placeholder="баг, дизайн, программирование, срочно">
+                <div id="task-tags-autocomplete" class="card-tags"></div> <!-- Для автодополнения тегов -->
+
+                <label for="task-due-date-input">Срок:</label>
+                <input type="date" id="task-due-date-input">
+
+                <label for="task-assigned-to-input">Исполнитель:</label>
+                <input type="text" id="task-assigned-to-input" placeholder="Назначить исполнителя">
+
+                <div class="modal-actions">
+                    <button id="task-done-button">✅ Готово</button>
+                    <button id="task-save-button">💾 Сохранить</button>
+                    <button id="task-delete-button">🗑️ Удалить</button>
+                    <button id="task-archive-button">🗄️ В Архив</button>
+                    <button id="task-modal-close">❌ Закрыть</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно создания/редактирования проекта -->
+        <div id="project-modal-overlay" class="modal-overlay">
+            <div id="project-modal-content" class="modal-content glass-effect">
+                <h3 id="project-modal-title">Создать Новый Проект</h3>
+                <label for="project-name-input">Название Проекта:</label>
+                <input type="text" id="project-name-input" placeholder="Название вашей игры или проекта">
+
+                <label for="project-location-select">Тематическая Локация:</label>
+                <select id="project-location-select">
+                    <option value="Лаборатория">🔬 Лаборатория</option>
+                    <option value="Студия">🎨 Студия</option>
+                    <option value="Арена">⚔️ Арена</option>
+                </select>
+
+                <div class="modal-actions">
+                    <button id="project-save-button">💾 Сохранить</button>
+                    <button id="project-modal-close">❌ Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно фильтрации -->
+        <div id="filter-modal-overlay" class="modal-overlay">
+            <div id="filter-modal-content" class="modal-content glass-effect">
+                <h3>Фильтр Задач</h3>
+                <label for="filter-search-input">Поиск по названию/описанию:</label>
+                <input type="text" id="filter-search-input" placeholder="Поиск по задачам...">
+
+                <div class="filter-group">
+                    <h4>По Тегам:</h4>
+                    <div id="filter-tags-options" class="tag-options">
+                        <!-- Теги для фильтрации будут загружены сюда -->
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <h4>По Сроку:</h4>
+                    <div id="filter-due-date-options" class="due-date-options">
+                        <span class="due-date-option" data-filter-value="all">Все</span>
+                        <span class="due-date-option" data-filter-value="today">Сегодня</span>
+                        <span class="due-date-option" data-filter-value="this-week">На этой неделе</span>
+                        <span class="due-date-option" data-filter-value="overdue">Просроченные</span>
+                        <span class="due-date-option" data-filter-value="no-due-date">Без срока</span>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="clear-filter-button">🗑️ Очистить Фильтр</button>
+                    <button id="filter-modal-close">❌ Закрыть</button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Панель настроек -->
+        <div id="settings-panel" class="glass-effect">
+            <h3>Настройки</h3>
+            <div class="setting-group">
+                <label>Тема:</label>
+                <div id="theme-switch" class="theme-switch"></div>
+            </div>
+            <div class="setting-group">
+                <label>Управление Тегами:</label>
+                <input type="text" id="custom-tag-input" placeholder="Добавить новый тег (например, 'звук')">
+                <button id="add-custom-tag-button" style="margin-top: 10px;">➕ Добавить Тег</button>
+                <div id="existing-tags-list" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px;">
+                    <!-- Существующие теги будут загружены сюда -->
+                </div>
+            </div>
+            <div class="setting-group">
+                <label>Данные:</label>
+                <button id="export-data-button">📦 Экспорт Данных (JSON)</button>
+                <input type="file" id="import-data-input" accept=".json">
+                <label for="import-data-input" class="file-upload-label" style="margin-top: 10px;">⬆️ Импорт Данных (JSON)</label>
+            </div>
+            <!-- Секция для кастомных колонок -->
+            <div class="setting-group">
+                <label>Управление Колонками:</label>
+                <input type="text" id="new-column-name-input" placeholder="Название новой колонки">
+                <button id="add-column-button" style="margin-top: 10px;">➕ Добавить Колонку</button>
+                <div id="existing-columns-list" style="margin-top: 15px;">
+                    <!-- Существующие колонки будут здесь -->
+                </div>
+            </div>
+            <div class="setting-group" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+                <button id="close-settings-button">❌ Закрыть Настройки</button>
+            </div>
+        </div>
+
+        <!-- Глобальное сообщение / Уведомление -->
+        <div id="message-box" class="message-box"></div>
+
+        <!-- Custom Confirmation Modal -->
+        <div id="custom-confirm-modal" class="modal-overlay">
+            <div class="modal-content glass-effect">
+                <h3 id="confirm-modal-title">Подтвердите действие</h3>
+                <p id="confirm-modal-message"></p>
+                <div class="modal-actions">
+                    <button id="confirm-modal-yes">Да</button>
+                    <button id="confirm-modal-no">Нет</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas для конфетти -->
+        <canvas id="confetti-canvas"></canvas>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase variables
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let userId = null;
+        let isAuthReady = false;
+
+        // UI Elements
+        const appHeaderTitle = document.getElementById('app-header-title');
+        const addProjectButton = document.getElementById('add-project-button');
+        const backToMainMenuButton = document.getElementById('back-to-main-menu');
+        const settingsButton = document.getElementById('settings-button');
+
+        const mainMenuScreen = document.getElementById('main-menu');
+        const projectListContainer = document.getElementById('project-list');
+        const kanbanBoardScreen = document.getElementById('kanban-board');
+        const currentBoardTitle = document.getElementById('current-board-title');
+        const currentBoardLocationDisplay = document.getElementById('current-board-location');
+        const kanbanColumnsContainer = document.getElementById('kanban-columns');
+        const addTaskButton = document.getElementById('add-task-button');
+        const filterTasksButton = document.getElementById('filter-tasks-button');
+        const archiveBoardButton = document.getElementById('archive-board-button');
+        const archiveScreen = document.getElementById('archive-screen');
+        const archiveProjectName = document.getElementById('archive-project-name');
+        const archiveTaskList = document.getElementById('archive-task-list');
+        const backToBoardFromArchiveButton = document.getElementById('back-to-board-from-archive');
+
+
+        const taskModalOverlay = document.getElementById('task-modal-overlay');
+        const taskModalContent = document.getElementById('task-modal-content');
+        const taskModalTitle = document.getElementById('task-modal-title');
+        const taskTitleInput = document.getElementById('task-title-input');
+        const taskDescriptionInput = document.getElementById('task-description-input');
+        const taskTagsInput = document.getElementById('task-tags-input');
+        const taskTagsAutocomplete = document.getElementById('task-tags-autocomplete');
+        const taskDueDateInput = document.getElementById('task-due-date-input');
+        const taskAssignedToInput = document.getElementById('task-assigned-to-input'); // New
+        const taskDoneButton = document.getElementById('task-done-button');
+        const taskSaveButton = document.getElementById('task-save-button');
+        const taskDeleteButton = document.getElementById('task-delete-button');
+        const taskArchiveButton = document.getElementById('task-archive-button');
+        const taskModalCloseButton = document.getElementById('task-modal-close');
+
+        const projectModalOverlay = document.getElementById('project-modal-overlay');
+        const projectModalContent = document.getElementById('project-modal-content');
+        const projectModalTitle = document.getElementById('project-modal-title');
+        const projectNameInput = document.getElementById('project-name-input');
+        const projectLocationSelect = document.getElementById('project-location-select');
+        const projectSaveButton = document.getElementById('project-save-button');
+        const projectModalCloseButton = document.getElementById('project-modal-close');
+
+        const filterModalOverlay = document.getElementById('filter-modal-overlay');
+        const filterModalContent = document.getElementById('filter-modal-content');
+        const filterSearchInput = document.getElementById('filter-search-input'); // New
+        const filterTagsOptions = document.getElementById('filter-tags-options');
+        const filterDueDateOptions = document.getElementById('filter-due-date-options');
+        const clearFilterButton = document.getElementById('clear-filter-button');
+        const filterModalCloseButton = document.getElementById('filter-modal-close');
+
+        const settingsPanel = document.getElementById('settings-panel');
+        const themeSwitch = document.getElementById('theme-switch');
+        const customTagInput = document.getElementById('custom-tag-input');
+        const addCustomTagButton = document.getElementById('add-custom-tag-button');
+        const existingTagsList = document.getElementById('existing-tags-list');
+        const exportDataButton = document.getElementById('export-data-button');
+        const importDataInput = document.getElementById('import-data-input');
+        const closeSettingsButton = document.getElementById('close-settings-button');
+        const newColumnNameInput = document.getElementById('new-column-name-input'); // New
+        const addColumnButton = document.getElementById('add-column-button');       // New
+        const existingColumnsList = document.getElementById('existing-columns-list'); // New
+
+        const messageBox = document.getElementById('message-box');
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+
+        const customConfirmModal = document.getElementById('custom-confirm-modal');
+        const confirmModalTitle = document.getElementById('confirm-modal-title');
+        const confirmModalMessage = document.getElementById('confirm-modal-message');
+        const confirmModalYes = document.getElementById('confirm-modal-yes');
+        const confirmModalNo = document.getElementById('confirm-modal-no');
+
+        let projects = []; // Now stores local copy of projects from Firestore
+        let currentProjectId = null;
+        let selectedTaskId = null;
+        let productivityPoints = 0;
+        let completedTasksCount = 0;
+        let customTags = ['баг', 'дизайн', 'программирование', 'срочно'];
+        let audioContext = null;
+
+        // Filters
+        let currentFilters = {
+            tags: new Set(),
+            dueDate: 'all',
+            searchText: '' // New filter
+        };
+
+        const locationIcons = {
+            'Лаборатория': '🔬',
+            'Студия': '🎨',
+            'Арена': '⚔️'
+        };
+
+        // --- Firebase Initialization and Authentication ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+            } else {
+                // Sign in anonymously if no token is provided
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                        userId = auth.currentUser.uid;
+                    } else {
+                        const anonUser = await signInAnonymously(auth);
+                        userId = anonUser.user.uid;
+                    }
+                } catch (error) {
+                    console.error("Firebase Auth Error:", error);
+                    showMessage("Ошибка аутентификации Firebase. Некоторые функции могут быть недоступны.", 'error');
+                }
+            }
+            isAuthReady = true;
+            // Load initial data after auth is ready
+            await loadUserData();
+            renderMainMenu();
+            renderSettingsTags();
+            resizeConfettiCanvas();
+            updateAllTaskOverdueStatuses();
+            loadTheme();
+        });
+
+        // --- Firebase Data Operations ---
+        async function loadUserData() {
+            if (!userId) return;
+            try {
+                const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/data/user_data`);
+                const userDocSnap = await getDoc(userDocRef);
+
+                if (userDocSnap.exists()) {
+                    const userData = userDocSnap.data();
+                    projects = userData.projects || [];
+                    productivityPoints = userData.productivityPoints || 0;
+                    completedTasksCount = userData.completedTasksCount || 0;
+                    customTags = userData.customTags || ['баг', 'дизайн', 'программирование', 'срочно'];
+                } else {
+                    // Initialize if no user data found
+                    projects = [];
+                    productivityPoints = 0;
+                    completedTasksCount = 0;
+                    customTags = ['баг', 'дизайн', 'программирование', 'срочно'];
+                    await setDoc(userDocRef, { projects, productivityPoints, completedTasksCount, customTags });
+                }
+            } catch (error) {
+                console.error("Error loading user data from Firebase:", error);
+                showMessage("Ошибка загрузки данных пользователя.", 'error');
+            }
+        }
+
+        async function saveUserData() {
+            if (!userId) {
+                console.warn("User not authenticated, cannot save data.");
+                return;
+            }
+            try {
+                const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/data/user_data`);
+                await setDoc(userDocRef, { projects, productivityPoints, completedTasksCount, customTags });
+            } catch (error) {
+                console.error("Error saving user data to Firebase:", error);
+                showMessage("Ошибка сохранения данных пользователя.", 'error');
+            }
+        }
+
+        // Replaced saveProjects with saveUserData
+        function saveProjects() {
+            saveUserData();
+        }
+
+        // Replaced loadProjects with loadUserData (called once after auth)
+        function loadProjects() { /* Handled by loadUserData in onAuthStateChanged */ }
+
+        // --- Utility Functions ---
+        function playSound(frequency, type, duration = 0.1, volume = 0.5) {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playSuccessSound() {
+            playSound(600, 'sine', 0.1, 0.7);
+            setTimeout(() => playSound(800, 'sine', 0.1, 0.7), 70);
+        }
+
+        function playClickSound() {
+            playSound(440, 'triangle', 0.05, 0.3);
+        }
+
+        function generateUniqueId() {
+            return '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.className = `message-box visible ${type}`;
+            playClickSound();
+            setTimeout(() => {
+                messageBox.className = 'message-box';
+            }, 3000);
+        }
+
+        function showCustomConfirm(title, message, onConfirm) {
+            confirmModalTitle.textContent = title;
+            confirmModalMessage.textContent = message;
+            customConfirmModal.classList.add('visible');
+
+            const handleYes = () => {
+                onConfirm(true);
+                customConfirmModal.classList.remove('visible');
+                confirmModalYes.removeEventListener('click', handleYes);
+                confirmModalNo.removeEventListener('click', handleNo);
+                playClickSound();
+            };
+            const handleNo = () => {
+                onConfirm(false);
+                customConfirmModal.classList.remove('visible');
+                confirmModalYes.removeEventListener('click', handleYes);
+                confirmModalNo.removeEventListener('click', handleNo);
+                playClickSound();
+            };
+
+            confirmModalYes.addEventListener('click', handleYes);
+            confirmModalNo.addEventListener('click', handleNo);
+        }
+
+        // --- Main Menu and Project Management ---
+        function renderMainMenu() {
+            projectListContainer.innerHTML = '';
+            if (projects.length === 0) {
+                projectListContainer.innerHTML = '<p style="text-align: center; width: 100%; opacity: 0.7;">Нажмите "✨ Новый Проект", чтобы создать вашу первую доску.</p>';
+            }
+            projects.forEach(project => {
+                const projectCard = document.createElement('div');
+                projectCard.className = 'project-card glass-effect';
+                projectCard.dataset.id = project.id;
+                projectCard.innerHTML = `
+                    <h3>${project.name}</h3>
+                    <p>Локация: ${locationIcons[project.location] || ''} ${project.location}</p>
+                    <p>Задач: ${project.columns.flatMap(col => col.tasks).length}</p>
+                    <p>Прогресс: ${calculateProjectProgress(project)}%</p> <!-- New progress bar -->
+                    <div class="project-actions">
+                        <button class="edit-project-button">✏️</button>
+                        <button class="delete-project-button">🗑️</button>
+                    </div>
+                `;
+                projectCard.addEventListener('click', (e) => {
+                    if (!e.target.closest('button')) {
+                        openBoard(project.id);
+                        playClickSound();
+                    }
+                });
+                projectCard.querySelector('.edit-project-button').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openProjectModal(project.id);
+                    playClickSound();
+                });
+                projectCard.querySelector('.delete-project-button').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteProject(project.id);
+                    playClickSound();
+                });
+                projectListContainer.appendChild(projectCard);
+            });
+        }
+
+        function switchScreen(targetScreenId) {
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(targetScreenId).classList.add('active');
+
+            if (targetScreenId === 'main-menu') {
+                backToMainMenuButton.style.display = 'none';
+                appHeaderTitle.textContent = 'Канбан';
+                addProjectButton.style.display = 'block';
+            } else {
+                backToMainMenuButton.style.display = 'block';
+                addProjectButton.style.display = 'none';
+            }
+            playClickSound();
+        }
+
+        function openBoard(projectId) {
+            currentProjectId = projectId;
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+
+            currentBoardTitle.textContent = project.name;
+            currentBoardLocationDisplay.innerHTML = `${locationIcons[project.location] || ''} ${project.location}`;
+            kanbanBoardScreen.dataset.location = project.location;
+
+            // Clear existing columns and tasks
+            kanbanColumnsContainer.innerHTML = '';
+
+            // Render columns based on project configuration
+            project.columns.forEach(column => {
+                const columnElement = document.createElement('div');
+                columnElement.className = 'kanban-column glass-effect';
+                columnElement.dataset.columnId = column.id;
+                columnElement.innerHTML = `
+                    <div class="column-header">${column.name}</div>
+                    <div class="task-list" data-column-id="${column.id}"></div>
+                `;
+                kanbanColumnsContainer.appendChild(columnElement);
+
+                // Add drag/drop listeners to new column task lists
+                const taskList = columnElement.querySelector('.task-list');
+                taskList.addEventListener('dragover', handleDragOver);
+                taskList.addEventListener('drop', handleDrop);
+
+                // Populate tasks
+                column.tasks.forEach(task => {
+                    taskList.appendChild(createTaskCardElement(task, column.id));
+                });
+            });
+
+            applyFilters(); // Apply filters when opening the board
+            switchScreen('kanban-board');
+        }
+
+        function createTaskCardElement(task, columnId) {
+            const card = document.createElement('div');
+            card.className = 'kanban-card glass-effect';
+            card.draggable = true;
+            card.dataset.id = task.id;
+            card.dataset.columnId = columnId;
+
+            const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && columnId !== 'done';
+            const dueDateHtml = task.dueDate ? `<div class="card-due-date ${isOverdue ? 'overdue' : ''}">⏰ ${task.dueDate}</div>` : '';
+
+            const tagsHtml = task.tags.map(tag => `<span class="tag tag-${tag.toLowerCase()}">${tag}</span>`).join('');
+            const assignedToHtml = task.assignedTo ? `<div class="card-assigned-to">👤 ${task.assignedTo}</div>` : '';
+
+            card.innerHTML = `
+                <h4>${task.title}</h4>
+                <p>${task.description ? task.description.substring(0, 70) + (task.description.length > 70 ? '...' : '') : ''}</p>
+                <div class="card-tags">${tagsHtml}</div>
+                ${assignedToHtml}
+                ${dueDateHtml}
+            `;
+
+            card.addEventListener('click', () => {
+                selectedTaskId = task.id;
+                openTaskModal(task);
+                playClickSound();
+            });
+
+            card.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', task.id);
+                card.classList.add('dragging');
+                playClickSound();
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+            });
+            return card;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            if (e.target.closest('.task-list')) {
+                e.dataTransfer.dropEffect = 'move';
+            } else {
+                e.dataTransfer.dropEffect = 'none';
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const taskId = e.dataTransfer.getData('text/plain');
+            const draggedCard = document.querySelector(`.kanban-card[data-id="${taskId}"]`);
+            if (!draggedCard) return;
+
+            let targetList = e.target.closest('.task-list');
+            if (!targetList) {
+                showMessage('Задача может быть перемещена только в список задач!', 'error');
+                return;
+            }
+
+            const currentProject = projects.find(p => p.id === currentProjectId);
+            if (!currentProject) return;
+
+            const oldColumnId = draggedCard.dataset.columnId;
+            const newColumnId = targetList.dataset.columnId;
+
+            if (oldColumnId === newColumnId) return;
+
+            const oldColumn = currentProject.columns.find(col => col.id === oldColumnId);
+            const newColumn = currentProject.columns.find(col => col.id === newColumnId);
+
+            const taskIndex = oldColumn.tasks.findIndex(t => t.id === taskId);
+            if (taskIndex === -1) return; // Task not found in old column (shouldn't happen)
+
+            const [taskToMove] = oldColumn.tasks.splice(taskIndex, 1);
+            taskToMove.column = newColumnId;
+            taskToMove.updatedAt = new Date().toISOString(); // Track changes
+            newColumn.tasks.push(taskToMove);
+
+            // Update history for the task
+            if (!taskToMove.history) taskToMove.history = [];
+            taskToMove.history.push({
+                timestamp: new Date().toISOString(),
+                action: `Перемещено из "${oldColumn.name}" в "${newColumn.name}"`
+            });
+
+            // Remove old card and append new one in target list
+            draggedCard.remove();
+            targetList.appendChild(createTaskCardElement(taskToMove, newColumnId));
+
+            saveProjects();
+            showMessage(`Задача "${taskToMove.title}" перемещена в "${newColumn.name}"!`);
+            playClickSound();
+            applyFilters(); // Re-apply filters after moving
+        }
+
+        function openTaskModal(task = null) {
+            if (task) {
+                taskModalTitle.textContent = 'Детали Задачи';
+                taskTitleInput.value = task.title;
+                taskDescriptionInput.value = task.description;
+                taskTagsInput.value = task.tags.join(', ');
+                taskDueDateInput.value = task.dueDate || '';
+                taskAssignedToInput.value = task.assignedTo || ''; // New: set assigned user
+                taskSaveButton.textContent = '✏️ Сохранить Изменения';
+                taskSaveButton.style.display = 'inline-flex';
+                taskDeleteButton.style.display = 'inline-flex';
+                taskArchiveButton.style.display = 'inline-flex';
+                taskDoneButton.style.display = task.column === 'done' ? 'none' : 'inline-flex';
+                selectedTaskId = task.id;
+            } else {
+                taskModalTitle.textContent = 'Новая Задача';
+                taskTitleInput.value = '';
+                taskDescriptionInput.value = '';
+                taskTagsInput.value = '';
+                taskDueDateInput.value = '';
+                taskAssignedToInput.value = ''; // New: clear assigned user
+                taskSaveButton.textContent = '💾 Сохранить';
+                taskSaveButton.style.display = 'inline-flex';
+                taskDeleteButton.style.display = 'none';
+                taskArchiveButton.style.display = 'none';
+                taskDoneButton.style.display = 'none';
+                selectedTaskId = null;
+            }
+            taskModalOverlay.classList.add('visible');
+            renderTaskTagAutocomplete(); // Render tags for autocomplete
+        }
+
+        function closeTaskModal() {
+            taskModalOverlay.classList.remove('visible');
+            selectedTaskId = null;
+            playClickSound();
+        }
+
+        function saveTask() {
+            const title = taskTitleInput.value.trim();
+            const description = taskDescriptionInput.value.trim();
+            const tags = taskTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+            const dueDate = taskDueDateInput.value;
+            const assignedTo = taskAssignedToInput.value.trim(); // New
+
+            if (!title) {
+                showMessage('Заголовок задачи не может быть пустым!', 'error');
+                return;
+            }
+
+            const currentProject = projects.find(p => p.id === currentProjectId);
+            if (!currentProject) return;
+
+            if (selectedTaskId) {
+                const task = currentProject.columns.flatMap(col => col.tasks).find(t => t.id === selectedTaskId);
+                if (task) {
+                    // Track changes for history
+                    const changes = [];
+                    if (task.title !== title) changes.push(`Заголовок: "${task.title}" -> "${title}"`);
+                    if (task.description !== description) changes.push(`Описание изменено`);
+                    if (JSON.stringify(task.tags.sort()) !== JSON.stringify(tags.sort())) changes.push(`Теги: "${task.tags.join(', ')}" -> "${tags.join(', ')}"`);
+                    if (task.dueDate !== dueDate) changes.push(`Срок: "${task.dueDate || 'нет'}" -> "${dueDate || 'нет'}"`);
+                    if (task.assignedTo !== assignedTo) changes.push(`Исполнитель: "${task.assignedTo || 'нет'}" -> "${assignedTo || 'нет'}"`);
+
+                    task.title = title;
+                    task.description = description;
+                    task.tags = tags;
+                    task.dueDate = dueDate;
+                    task.assignedTo = assignedTo; // New
+                    task.updatedAt = new Date().toISOString();
+
+                    if (!task.history) task.history = [];
+                    if (changes.length > 0) {
+                        task.history.push({
+                            timestamp: new Date().toISOString(),
+                            action: `Изменения: ${changes.join('; ')}`
+                        });
+                    }
+
+                    updateTaskCardInUI(task);
+                    showMessage('Задача обновлена!');
+                }
+            } else {
+                const newTask = {
+                    id: generateUniqueId(),
+                    title,
+                    description,
+                    tags,
+                    dueDate,
+                    assignedTo, // New
+                    column: 'planned',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    history: [{ timestamp: new Date().toISOString(), action: 'Задача создана' }] // Initial history
+                };
+                currentProject.columns.find(col => col.id === 'planned').tasks.push(newTask);
+                kanbanColumnsContainer.querySelector('.task-list[data-column-id="planned"]').appendChild(createTaskCardElement(newTask, 'planned'));
+                showMessage('Новая задача создана!');
+            }
+            saveProjects();
+            closeTaskModal();
+            playSuccessSound();
+            applyFilters(); // Re-apply filters after saving
+        }
+
+        function updateTaskCardInUI(task) {
+            const cardElement = document.querySelector(`.kanban-card[data-id="${task.id}"]`);
+            if (cardElement) {
+                cardElement.replaceWith(createTaskCardElement(task, task.column)); // Recreate element for update
+            }
+        }
+
+        function deleteTask() {
+            showCustomConfirm('Удаление Задачи', 'Вы уверены, что хотите удалить эту задачу? Это действие необратимо.', (confirmed) => {
+                if (confirmed) {
+                    const currentProject = projects.find(p => p.id === currentProjectId);
+                    if (!currentProject) return;
+
+                    currentProject.columns.forEach(column => {
+                        const initialLength = column.tasks.length;
+                        column.tasks = column.tasks.filter(t => t.id !== selectedTaskId);
+                        if (column.tasks.length < initialLength) {
+                            const cardElement = document.querySelector(`.kanban-card[data-id="${selectedTaskId}"]`);
+                            if (cardElement) cardElement.remove();
+                            showMessage('Задача удалена.');
+                            saveProjects();
+                            playClickSound();
+                            closeTaskModal();
+                            applyFilters(); // Re-apply filters after deletion
+                            return;
+                        }
+                    });
+                }
+            });
+        }
+
+        function archiveTask() {
+            showCustomConfirm('Архивировать Задачу', 'Вы уверены, что хотите переместить эту задачу в архив?', (confirmed) => {
+                if (confirmed) {
+                    const currentProject = projects.find(p => p.id === currentProjectId);
+                    if (!currentProject) return;
+
+                    let taskToArchive = null;
+                    currentProject.columns.forEach(column => {
+                        const taskIndex = column.tasks.findIndex(t => t.id === selectedTaskId);
+                        if (taskIndex !== -1) {
+                            [taskToArchive] = column.tasks.splice(taskIndex, 1);
+                            const cardElement = document.querySelector(`.kanban-card[data-id="${selectedTaskId}"]`);
+                            if (cardElement) cardElement.remove();
+                        }
+                    });
+
+                    if (taskToArchive) {
+                        if (!currentProject.archive) {
+                            currentProject.archive = [];
+                        }
+                        taskToArchive.column = 'archive';
+                        taskToArchive.updatedAt = new Date().toISOString();
+                        if (!taskToArchive.history) taskToArchive.history = [];
+                        taskToArchive.history.push({ timestamp: new Date().toISOString(), action: 'Задача архивирована' });
+
+                        currentProject.archive.push(taskToArchive);
+                        showMessage('Задача перемещена в архив.');
+                        saveProjects();
+                        playClickSound();
+                        closeTaskModal();
+                        applyFilters(); // Re-apply filters after archiving
+                    }
+                }
+            });
+        }
+
+        function completeTask() {
+            const currentProject = projects.find(p => p.id === currentProjectId);
+            if (!currentProject) return;
+
+            let taskToComplete = null;
+            let originalColumnId = null;
+
+            for (const column of currentProject.columns) {
+                const taskIndex = column.tasks.findIndex(t => t.id === selectedTaskId);
+                if (taskIndex !== -1) {
+                    originalColumnId = column.id;
+                    [taskToComplete] = column.tasks.splice(taskIndex, 1);
+                    break;
+                }
+            }
+
+            if (taskToComplete && originalColumnId !== 'done') {
+                const doneColumn = currentProject.columns.find(col => col.id === 'done');
+                taskToComplete.column = 'done';
+                taskToComplete.updatedAt = new Date().toISOString();
+                if (!taskToComplete.history) taskToComplete.history = [];
+                taskToComplete.history.push({ timestamp: new Date().toISOString(), action: 'Задача завершена' });
+
+                doneColumn.tasks.push(taskToComplete);
+
+                const cardElement = document.querySelector(`.kanban-card[data-id="${selectedTaskId}"]`);
+                if (cardElement) {
+                    cardElement.remove();
+                    kanbanColumnsContainer.querySelector('.task-list[data-column-id="done"]').appendChild(createTaskCardElement(taskToComplete, 'done'));
+                }
+
+                taskDoneButton.classList.add('flash-animation');
+                setTimeout(() => {
+                    taskDoneButton.classList.remove('flash-animation');
+                }, 800);
+
+                productivityPoints += 10;
+                completedTasksCount++;
+                showMessage(`Задача "${taskToComplete.title}" завершена! +10 очков продуктивности. Всего: ${productivityPoints}`);
+                playSuccessSound();
+
+                if (completedTasksCount % 10 === 0) {
+                    launchConfetti();
+                    showMessage('🥳 10 задач завершено! Отличная работа!');
+                }
+                saveProjects();
+                closeTaskModal();
+                applyFilters(); // Re-apply filters after completion
+            } else if (taskToComplete && originalColumnId === 'done') {
+                showMessage('Задача уже завершена.', 'info');
+                playClickSound();
+            } else {
+                showMessage('Не удалось найти задачу для завершения.', 'error');
+            }
+        }
+
+        function openProjectModal(projectId = null) {
+            if (projectId) {
+                projectModalTitle.textContent = 'Редактировать Проект';
+                const project = projects.find(p => p.id === projectId);
+                if (project) {
+                    projectNameInput.value = project.name;
+                    projectLocationSelect.value = project.location;
+                }
+                projectSaveButton.dataset.editId = projectId;
+            } else {
+                projectModalTitle.textContent = 'Создать Новый Проект';
+                projectNameInput.value = '';
+                projectLocationSelect.value = 'Лаборатория';
+                delete projectSaveButton.dataset.editId;
+            }
+            projectModalOverlay.classList.add('visible');
+        }
+
+        function closeProjectModal() {
+            projectModalOverlay.classList.remove('visible');
+            playClickSound();
+        }
+
+        function saveProject() {
+            const projectName = projectNameInput.value.trim();
+            const projectLocation = projectLocationSelect.value;
+
+            if (!projectName) {
+                showMessage('Название проекта не может быть пустым!', 'error');
+                return;
+            }
+
+            const editId = projectSaveButton.dataset.editId;
+            if (editId) {
+                const project = projects.find(p => p.id === editId);
+                if (project) {
+                    project.name = projectName;
+                    project.location = projectLocation;
+                    saveProjects(); // Save changes to Firebase
+                    showMessage('Проект обновлен!');
+                }
+            } else {
+                const newProject = {
+                    id: generateUniqueId(),
+                    name: projectName,
+                    location: projectLocation,
+                    columns: [
+                        { id: 'planned', name: 'Запланировано', tasks: [] },
+                        { id: 'in-progress', name: 'В работе', tasks: [] },
+                        { id: 'testing', name: 'Тестирование', tasks: [] },
+                        { id: 'done', name: 'Готово', tasks: [] }
+                    ],
+                    archive: []
+                };
+                projects.push(newProject);
+                saveProjects(); // Save new project to Firebase
+                showMessage('Новый проект создан!');
+            }
+            renderMainMenu();
+            closeProjectModal();
+            playSuccessSound();
+        }
+
+        function deleteProject(projectId) {
+            showCustomConfirm('Удаление Проекта', 'Вы уверены, что хотите удалить этот проект? Это действие необратимо.', (confirmed) => {
+                if (confirmed) {
+                    projects = projects.filter(p => p.id !== projectId);
+                    saveProjects(); // Save changes to Firebase
+                    renderMainMenu();
+                    showMessage('Проект удален.');
+                    playClickSound();
+                }
+            });
+        }
+
+        // --- Settings Panel ---
+        function renderSettingsTags() {
+            existingTagsList.innerHTML = '';
+            customTags.forEach(tag => {
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'tag glass-effect';
+                tagSpan.textContent = tag;
+                const deleteBtn = document.createElement('span');
+                deleteBtn.textContent = ' ✖';
+                deleteBtn.style.cursor = 'pointer';
+                deleteBtn.style.marginLeft = '5px';
+                deleteBtn.addEventListener('click', () => {
+                    customTags = customTags.filter(t => t !== tag);
+                    saveProjects(); // Save changes to Firebase
+                    renderSettingsTags();
+                    showMessage(`Тег "${tag}" удален.`);
+                    playClickSound();
+                });
+                tagSpan.appendChild(deleteBtn);
+                existingTagsList.appendChild(tagSpan);
+            });
+        }
+
+        function addCustomTag() {
+            const newTag = customTagInput.value.trim();
+            if (newTag && !customTags.includes(newTag)) {
+                customTags.push(newTag);
+                saveProjects(); // Save changes to Firebase
+                renderSettingsTags();
+                customTagInput.value = '';
+                showMessage(`Тег "${newTag}" добавлен.`);
+                playSuccessSound();
+            } else if (newTag && customTags.includes(newTag)) {
+                showMessage('Такой тег уже существует!', 'info');
+            } else {
+                showMessage('Введите название тега.', 'error');
+            }
+        }
+
+        function exportData() {
+            const data = JSON.stringify(projects, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kanban_data.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showMessage('Данные экспортированы!');
+            playSuccessSound();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const importedProjects = JSON.parse(e.target.result);
+                        if (Array.isArray(importedProjects) && importedProjects.every(p => p.id && p.name && p.columns)) {
+                            projects = importedProjects;
+                            await saveProjects(); // Save imported data to Firebase
+                            renderMainMenu();
+                            showMessage('Данные успешно импортированы!');
+                            playSuccessSound();
+                            if (currentProjectId) {
+                                openBoard(currentProjectId);
+                            }
+                        } else {
+                            showMessage('Неверный формат файла JSON.', 'error');
+                        }
+                    } catch (error) {
+                        showMessage('Ошибка при чтении файла JSON: ' + error.message, 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function applyTheme(isDark) {
+            document.body.classList.toggle('light-theme', !isDark);
+            themeSwitch.classList.toggle('dark-theme', isDark);
+
+            if (!isDark) {
+                document.documentElement.style.setProperty('--main-background', `linear-gradient(135deg, #A7D9FD 0%, #D8B7FF 50%, #FFB7E0 100%)`);
+                document.documentElement.style.setProperty('--glass-background-light', `rgba(255, 255, 255, 0.7)`);
+                document.documentElement.style.setProperty('--glass-border-light', `rgba(192, 192, 192, 0.7)`);
+                document.documentElement.style.setProperty('--glass-background-dark', `rgba(200, 200, 200, 0.5)`);
+                document.documentElement.style.setProperty('--glass-border-dark', `rgba(100, 100, 100, 0.4)`);
+                document.documentElement.style.setProperty('--text-color-light', `var(--text-color-dark)`);
+                document.documentElement.style.setProperty('--color-primary-dark', `#333`);
+            } else {
+                document.documentElement.style.setProperty('--main-background', `linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-purple-start) 50%, var(--color-primary-purple-end) 100%)`);
+                document.documentElement.style.setProperty('--glass-background-light', `rgba(255, 255, 255, 0.1)`);
+                document.documentElement.style.setProperty('--glass-border-light', `rgba(192, 192, 192, 0.3)`);
+                document.documentElement.style.setProperty('--glass-background-dark', `rgba(0, 0, 0, 0.2)`);
+                document.documentElement.style.setProperty('--glass-border-dark', `rgba(192, 192, 192, 0.1)`);
+                document.documentElement.style.setProperty('--text-color-light', `#E0E0E0`);
+                document.documentElement.style.setProperty('--color-primary-dark', `#0F1A2C`);
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = themeSwitch.classList.contains('dark-theme');
+            applyTheme(!isDark);
+            localStorage.setItem('kanbanTheme', !isDark ? 'dark' : 'light');
+            playClickSound();
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('kanbanTheme');
+            applyTheme(savedTheme === 'dark' || savedTheme === null);
+        }
+
+        // --- Filter Modal ---
+        function openFilterModal() {
+            filterTagsOptions.innerHTML = '';
+            customTags.forEach(tag => {
+                const tagOption = document.createElement('span');
+                tagOption.className = `tag-option glass-effect ${currentFilters.tags.has(tag) ? 'selected' : ''}`;
+                tagOption.textContent = tag;
+                tagOption.dataset.tag = tag;
+                tagOption.addEventListener('click', () => {
+                    if (currentFilters.tags.has(tag)) {
+                        currentFilters.tags.delete(tag);
+                    } else {
+                        currentFilters.tags.add(tag);
+                    }
+                    tagOption.classList.toggle('selected');
+                    applyFilters();
+                    playClickSound();
+                });
+                filterTagsOptions.appendChild(tagOption);
+            });
+
+            filterDueDateOptions.querySelectorAll('.due-date-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.filterValue === currentFilters.dueDate) {
+                    option.classList.add('selected');
+                }
+                option.onclick = () => { // Use onclick to re-assign listener each time modal opens
+                    filterDueDateOptions.querySelectorAll('.due-date-option').forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    currentFilters.dueDate = option.dataset.filterValue;
+                    applyFilters();
+                    playClickSound();
+                };
+            });
+            filterSearchInput.value = currentFilters.searchText; // Set search input value
+
+            filterModalOverlay.classList.add('visible');
+        }
+
+        function closeFilterModal() {
+            filterModalOverlay.classList.remove('visible');
+            playClickSound();
+        }
+
+        function clearFilters() {
+            currentFilters.tags.clear();
+            currentFilters.dueDate = 'all';
+            currentFilters.searchText = ''; // Clear search text
+            openFilterModal(); // Re-render filter options to show 'all' selected
+            applyFilters();
+            showMessage('Фильтры очищены.');
+            playClickSound();
+        }
+
+        function applyFilters() {
+            const currentProject = projects.find(p => p.id === currentProjectId);
+            if (!currentProject) return;
+
+            kanbanColumnsContainer.querySelectorAll('.kanban-card').forEach(cardElement => {
+                const taskId = cardElement.dataset.id;
+                const task = currentProject.columns.flatMap(col => col.tasks).find(t => t.id === taskId);
+                if (!task) return;
+
+                let show = true;
+
+                // Filter by search text (title or description)
+                if (currentFilters.searchText) {
+                    const searchTextLower = currentFilters.searchText.toLowerCase();
+                    const titleLower = task.title.toLowerCase();
+                    const descriptionLower = task.description ? task.description.toLowerCase() : '';
+                    if (!titleLower.includes(searchTextLower) && !descriptionLower.includes(searchTextLower)) {
+                        show = false;
+                    }
+                }
+
+                // Filter by tags
+                if (show && currentFilters.tags.size > 0) {
+                    const taskHasSelectedTag = task.tags.some(tag => currentFilters.tags.has(tag));
+                    if (!taskHasSelectedTag) {
+                        show = false;
+                    }
+                }
+
+                // Filter by due date
+                if (show && currentFilters.dueDate !== 'all') {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const taskDueDate = task.dueDate ? new Date(task.dueDate) : null;
+                    if (taskDueDate) {
+                        taskDueDate.setHours(0, 0, 0, 0);
+                    }
+
+                    switch (currentFilters.dueDate) {
+                        case 'today':
+                            if (!taskDueDate || taskDueDate.getTime() !== today.getTime()) {
+                                show = false;
+                            }
+                            break;
+                        case 'this-week':
+                            if (!taskDueDate) {
+                                show = false;
+                            } else {
+                                const dayOfWeek = today.getDay();
+                                const startOfWeek = new Date(today);
+                                startOfWeek.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)); // Monday
+                                startOfWeek.setHours(0,0,0,0);
+
+                                const endOfWeek = new Date(startOfWeek);
+                                endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
+                                endOfWeek.setHours(23,59,59,999);
+
+                                if (!(taskDueDate >= startOfWeek && taskDueDate <= endOfWeek)) {
+                                    show = false;
+                                }
+                            }
+                            break;
+                        case 'overdue':
+                            if (!taskDueDate || taskDueDate >= today) {
+                                show = false;
+                            } else if (task.column === 'done') { // Overdue tasks that are already done are not shown
+                                show = false;
+                            }
+                            break;
+                        case 'no-due-date':
+                            if (taskDueDate) {
+                                show = false;
+                            }
+                            break;
+                    }
+                }
+
+                if (show) {
+                    cardElement.classList.remove('filtered-out');
+                } else {
+                    cardElement.classList.add('filtered-out');
+                }
+            });
+        }
+
+        // --- Kanban Board Columns Management ---
+        function renderExistingColumns() {
+            existingColumnsList.innerHTML = '';
+            const currentProject = projects.find(p => p.id === currentProjectId);
+            if (!currentProject) {
+                existingColumnsList.innerHTML = '<p>Откройте проект, чтобы управлять колонками.</p>';
+                return;
+            }
+
+            currentProject.columns.forEach(column => {
+                const columnDiv = document.createElement('div');
+                columnDiv.className = 'tag glass-effect'; // Reusing tag style for visual consistency
+                columnDiv.innerHTML = `<span>${column.name}</span>`;
+                
+                // Allow renaming if not one of the default columns
+                if (!['planned', 'in-progress', 'testing', 'done'].includes(column.id)) {
+                    const renameInput = document.createElement('input');
+                    renameInput.type = 'text';
+                    renameInput.value = column.name;
+                    renameInput.style.marginLeft = '10px';
+                    renameInput.style.width = '100px';
+                    renameInput.style.color = 'var(--text-color-dark)'; // Ensure text is visible
+                    renameInput.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+                    renameInput.style.border = '1px solid var(--glass-border-light)';
+                    renameInput.style.borderRadius = '5px';
+                    renameInput.style.padding = '5px';
+                    renameInput.addEventListener('change', (e) => {
+                        column.name = e.target.value.trim();
+                        saveProjects();
+                        openBoard(currentProjectId); // Re-render board to reflect column name change
+                        showMessage(`Колонка "${column.name}" переименована.`);
+                    });
+                    columnDiv.appendChild(renameInput);
+                }
+
+                const deleteBtn = document.createElement('span');
+                deleteBtn.textContent = ' ✖';
+                deleteBtn.style.cursor = 'pointer';
+                deleteBtn.style.marginLeft = '5px';
+                deleteBtn.addEventListener('click', () => {
+                    showCustomConfirm('Удалить Колонку', `Вы уверены, что хотите удалить колонку "${column.name}"? Все задачи в ней будут перемещены в "Запланировано".`, (confirmed) => {
+                        if (confirmed) {
+                            deleteColumn(column.id);
+                        }
+                    });
+                });
+
+                // Prevent deletion of default columns
+                if (!['planned', 'in-progress', 'testing', 'done'].includes(column.id)) {
+                    columnDiv.appendChild(deleteBtn);
+                }
+                existingColumnsList.appendChild(columnDiv);
+            });
+        }
+
+        function addColumn() {
+            const newColumnName = newColumnNameInput.value.trim();
+            if (!newColumnName) {
+                showMessage('Название новой колонки не может быть пустым!', 'error');
+                return;
+            }
+
+            const currentProject = projects.find(p => p.id === currentProjectId);
+            if (!currentProject) {
+                showMessage('Пожалуйста, откройте проект, чтобы добавить колонки.', 'error');
+                return;
+            }
+
+            const newColumnId = newColumnName.toLowerCase().replace(/\s/g, '-');
+            if (currentProject.columns.some(col => col.id === newColumnId)) {
+                showMessage('Колонка с таким именем уже существует!', 'info');
+                return;
+            }
+
+            currentProject.columns.push({
+                id: newColumnId,
+                name: newColumnName,
+                tasks: []
+            });
+            saveProjects();
+            newColumnNameInput.value = '';
+            showMessage(`Колонка "${newColumnName}" добавлена!`);
+            openBoard(currentProjectId); // Re-render board to show new column
+            renderExistingColumns(); // Update settings panel
+            playSuccessSound();
+        }
+
+        function deleteColumn(columnId) {
+            const currentProject = projects.find(p => p.id === currentProjectId);
+            if (!currentProject) return;
+
+            const indexToDelete = currentProject.columns.findIndex(col => col.id === columnId);
+            if (indexToDelete === -1) return;
+
+            const deletedColumn = currentProject.columns[indexToDelete];
+            if (['planned', 'in-progress', 'testing', 'done'].includes(deletedColumn.id)) {
+                showMessage('Невозможно удалить стандартные колонки.', 'error');
+                return;
+            }
+
+            // Move tasks from deleted column to 'planned'
+            const plannedColumn = currentProject.columns.find(col => col.id === 'planned');
+            if (plannedColumn && deletedColumn.tasks.length > 0) {
+                deletedColumn.tasks.forEach(task => {
+                    task.column = 'planned'; // Update task's column reference
+                    plannedColumn.tasks.push(task);
+                });
+            }
+            
+            currentProject.columns.splice(indexToDelete, 1);
+            saveProjects();
+            showMessage(`Колонка "${deletedColumn.name}" удалена. Задачи перемещены в "Запланировано".`);
+            openBoard(currentProjectId); // Re-render board to reflect changes
+            renderExistingColumns(); // Update settings panel
+            playClickSound();
+        }
+
+
+        // --- Archive Screen Functions ---
+        function openArchiveScreen() {
+            const currentProject = projects.find(p => p.id === currentProjectId);
+            if (!currentProject) return;
+
+            archiveProjectName.textContent = currentProject.name;
+            archiveTaskList.innerHTML = ''; // Clear previous tasks
+
+            if (currentProject.archive && currentProject.archive.length > 0) {
+                currentProject.archive.forEach(task => {
+                    const card = document.createElement('div');
+                    card.className = 'kanban-card glass-effect';
+                    card.innerHTML = `
+                        <h4>${task.title}</h4>
+                        <p>${task.description ? task.description.substring(0, 70) + (task.description.length > 70 ? '...' : '') : ''}</p>
+                        <div class="card-tags">${task.tags.map(tag => `<span class="tag tag-${tag.toLowerCase()}">${tag}</span>`).join('')}</div>
+                        <div class="card-due-date">🗄️ Архивировано: ${new Date(task.updatedAt).toLocaleDateString()}</div>
+                        <button class="restore-task-button" data-task-id="${task.id}">↩️ Восстановить</button>
+                    `;
+                    card.querySelector('.restore-task-button').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        restoreTaskFromArchive(task.id);
+                        playClickSound();
+                    });
+                    archiveTaskList.appendChild(card);
+                });
+            } else {
+                archiveTaskList.innerHTML = '<p style="text-align: center; width: 100%; opacity: 0.7;">Архив пуст.</p>';
+            }
+
+            switchScreen('archive-screen');
+        }
+
+        function restoreTaskFromArchive(taskId) {
+            const currentProject = projects.find(p => p.id === currentProjectId);
+            if (!currentProject || !currentProject.archive) return;
+
+            const taskIndex = currentProject.archive.findIndex(t => t.id === taskId);
+            if (taskIndex === -1) return;
+
+            const [taskToRestore] = currentProject.archive.splice(taskIndex, 1);
+            
+            // Restore to 'planned' column by default
+            const plannedColumn = currentProject.columns.find(col => col.id === 'planned');
+            if (plannedColumn) {
+                taskToRestore.column = 'planned'; // Update column reference
+                taskToRestore.updatedAt = new Date().toISOString();
+                if (!taskToRestore.history) taskToRestore.history = [];
+                taskToRestore.history.push({ timestamp: new Date().toISOString(), action: 'Задача восстановлена из архива' });
+                plannedColumn.tasks.push(taskToRestore);
+                saveProjects();
+                showMessage(`Задача "${taskToRestore.title}" восстановлена в "Запланировано".`);
+                openArchiveScreen(); // Re-render archive screen
+                openBoard(currentProjectId); // Re-render kanban board
+                playSuccessSound();
+            } else {
+                showMessage('Не удалось найти колонку "Запланировано" для восстановления задачи.', 'error');
+            }
+        }
+
+        function calculateProjectProgress(project) {
+            const allTasks = project.columns.flatMap(col => col.tasks);
+            if (project.archive) {
+                // Include archived tasks in total for progress calculation if they were originally from the project
+                allTasks.push(...project.archive);
+            }
+            const totalTasks = allTasks.length;
+            if (totalTasks === 0) return 0;
+
+            const completedTasks = project.columns.find(col => col.id === 'done')?.tasks.length || 0;
+            return Math.round((completedTasks / totalTasks) * 100);
+        }
+
+        // --- Autocomplete for Tags ---
+        function renderTaskTagAutocomplete() {
+            taskTagsAutocomplete.innerHTML = '';
+            const currentInputTags = taskTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+
+            customTags.forEach(tag => {
+                const isAlreadySelected = currentInputTags.includes(tag);
+                const tagSpan = document.createElement('span');
+                tagSpan.className = `tag glass-effect ${isAlreadySelected ? 'selected' : ''}`;
+                tagSpan.textContent = tag;
+                tagSpan.style.cursor = 'pointer';
+                tagSpan.addEventListener('click', () => {
+                    const tagsArray = taskTagsInput.value.split(',').map(t => t.trim()).filter(t => t !== '');
+                    if (tagsArray.includes(tag)) {
+                        taskTagsInput.value = tagsArray.filter(t => t !== tag).join(', ');
+                    } else {
+                        taskTagsInput.value = (taskTagsInput.value ? taskTagsInput.value + ', ' : '') + tag;
+                    }
+                    renderTaskTagAutocomplete(); // Re-render to update selection
+                });
+                taskTagsAutocomplete.appendChild(tagSpan);
+            });
+        }
+
+
+        // Конфетти
+        let particles = [];
+        const colors = ['#81D4FA', '#C0C0C0', '#6A1B9A', '#2A0F45', '#4CAF50', '#FFD700'];
+
+        function resizeConfettiCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+
+        class ConfettiParticle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 8 + 4;
+                this.color = color;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 10,
+                    y: (Math.random() - 0.5) * 10 - 15
+                };
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = (Math.random() - 0.5) * 20;
+                this.alpha = 1;
+                this.gravity = 0.5;
+            }
+
+            update() {
+                this.velocity.y += this.gravity;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.rotation += this.rotationSpeed;
+                this.alpha -= 0.02;
+            }
+
+            draw() {
+                confettiCtx.save();
+                confettiCtx.translate(this.x, this.y);
+                confettiCtx.rotate(this.rotation * Math.PI / 180);
+                confettiCtx.globalAlpha = this.alpha;
+                confettiCtx.fillStyle = this.color;
+                confettiCtx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                confettiCtx.restore();
+            }
+        }
+
+        function launchConfetti() {
+            particles = [];
+            const centerX = confettiCanvas.width / 2;
+            const centerY = confettiCanvas.height / 2;
+            for (let i = 0; i < 150; i++) {
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particles.push(new ConfettiParticle(centerX, centerY, color));
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].alpha <= 0 || particles[i].y > confettiCanvas.height) {
+                    particles.splice(i, 1);
+                }
+            }
+            if (particles.length > 0) {
+                requestAnimationFrame(animateConfetti);
+            }
+        }
+
+
+        // Инициализация
+        window.addEventListener('load', () => {
+            // Initial data loading and rendering moved to onAuthStateChanged
+            // so we wait for Firebase auth to be ready
+        });
+
+        window.addEventListener('resize', resizeConfettiCanvas);
+
+        // Слушатели событий
+        addProjectButton.addEventListener('click', () => openProjectModal());
+        backToMainMenuButton.addEventListener('click', () => {
+            switchScreen('main-menu');
+            renderMainMenu();
+        });
+        settingsButton.addEventListener('click', () => {
+            settingsPanel.classList.toggle('visible');
+            renderExistingColumns(); // Render columns in settings
+            playClickSound();
+        });
+        closeSettingsButton.addEventListener('click', () => {
+            settingsPanel.classList.remove('visible');
+            playClickSound();
+        });
+        addTaskButton.addEventListener('click', () => openTaskModal());
+        taskModalCloseButton.addEventListener('click', closeTaskModal);
+        taskSaveButton.addEventListener('click', saveTask);
+        taskDeleteButton.addEventListener('click', deleteTask);
+        taskArchiveButton.addEventListener('click', archiveTask);
+        taskDoneButton.addEventListener('click', completeTask);
+        projectModalCloseButton.addEventListener('click', closeProjectModal);
+        projectSaveButton.addEventListener('click', saveProject);
+        addCustomTagButton.addEventListener('click', addCustomTag);
+        exportDataButton.addEventListener('click', exportData);
+        importDataInput.addEventListener('change', importData);
+        themeSwitch.addEventListener('click', toggleTheme);
+
+        filterTasksButton.addEventListener('click', openFilterModal);
+        filterModalCloseButton.addEventListener('click', closeFilterModal);
+        clearFilterButton.addEventListener('click', clearFilters);
+        filterSearchInput.addEventListener('input', () => { // New: Live search filter
+            currentFilters.searchText = filterSearchInput.value.trim();
+            applyFilters();
+        });
+        taskTagsInput.addEventListener('input', renderTaskTagAutocomplete); // New: Live autocomplete for tags
+
+        addColumnButton.addEventListener('click', addColumn); // New: Add column button listener
+
+        // Event listener for opening archive screen
+        archiveBoardButton.addEventListener('click', openArchiveScreen);
+        backToBoardFromArchiveButton.addEventListener('click', () => {
+            openBoard(currentProjectId); // Go back to the current board
+        });
+
+        kanbanColumnsContainer.querySelectorAll('.task-list').forEach(list => {
+            list.addEventListener('dragover', handleDragOver);
+            list.addEventListener('drop', handleDrop);
+        });
+
+        document.body.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+
+            const appElement = document.getElementById('app');
+            appElement.style.backgroundPositionX = `${-x * 30}px`;
+            appElement.style.backgroundPositionY = `${-y * 30}px`;
+
+            document.querySelectorAll('.glass-effect').forEach(el => {
+                const rect = el.getBoundingClientRect();
+                const elX = (e.clientX - rect.left) / rect.width;
+                const elY = (e.clientY - rect.top) / rect.height;
+
+                el.style.setProperty('--mouse-x', `${elX * 100}%`);
+                el.style.setProperty('--mouse-y', `${elY * 100}%`);
+            });
+        });
+
+        document.head.insertAdjacentHTML('beforeend', `
+            <style>
+                .glass-effect::after {
+                    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+                    transition: none;
+                }
+            </style>
+        `);
+
+        // Removed the original archiveBoardButton listener, as it's now handled by openArchiveScreen
+        // and the confirmation logic is moved to showCustomConfirm.
+
+        function updateAllTaskOverdueStatuses() {
+            if (!currentProjectId) return;
+            const currentProject = projects.find(p => p.id === currentProjectId);
+            if (!currentProject) return;
+
+            currentProject.columns.forEach(column => {
+                column.tasks.forEach(task => {
+                    const cardElement = document.querySelector(`.kanban-card[data-id="${task.id}"] .card-due-date`);
+                    if (cardElement) {
+                        const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.column !== 'done';
+                        cardElement.classList.toggle('overdue', isOverdue);
+                    }
+                });
+            });
+        }
+        setInterval(updateAllTaskOverdueStatuses, 60000); // Check every minute
+    </script>
+</body>
+</html>
